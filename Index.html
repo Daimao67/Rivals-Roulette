@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>RIVALS 懲罰輪盤 - 極簡戰術版</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Inter, Orbitron & Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:ital,wght@1,800;1,900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Noto Sans TC', 'Inter', 'sans-serif'],
+            rivals: ['Orbitron', 'sans-serif'],
+          },
+          colors: {
+            rivals: {
+              yellow: '#facc15',
+              purple: '#8b5cf6',
+              red: '#ef4444',
+              darkBg: '#09090b',
+              lightBg: '#f8fafc',
+              darkCard: '#121215',
+              lightCard: '#ffffff'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Noto Sans TC', 'Inter', sans-serif;
+      user-select: none;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* Minimalist Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #a1a1aa;
+      border-radius: 9999px;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #3f3f46;
+    }
+
+    /* Screen Shake Impact on Spin Finish */
+    .shake-impact {
+      animation: screenImpact 0.4s cubic-bezier(.36,.07,.19,.97) both;
+    }
+
+    @keyframes screenImpact {
+      10%, 90% { transform: translate3d(-1px, 1px, 0); }
+      20%, 80% { transform: translate3d(2px, -2px, 0); }
+      30%, 50%, 70% { transform: translate3d(-3px, 2px, 0); }
+      40%, 60% { transform: translate3d(3px, -1px, 0); }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-neutral-950 dark:text-neutral-100 min-h-screen flex flex-col antialiased">
+
+  <div id="app-wrapper" class="relative flex flex-col min-h-screen">
+    
+    <!-- HEADER -->
+    <header class="w-full px-5 py-4 border-b border-slate-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md sticky top-0 z-40 transition-colors">
+      <div class="max-w-7xl mx-auto flex justify-between items-center">
+        
+        <!-- RIVALS LOGO (Custom SVG matching user provided image) -->
+        <div class="flex items-center gap-3 cursor-pointer" onclick="location.reload()">
+          <svg viewBox="0 0 280 80" class="h-9 sm:h-11 w-auto drop-shadow-sm transition-transform hover:scale-105" xmlns="http://www.w3.org/2000/svg">
+            <!-- Left Badge (Yellow) -->
+            <path d="M 8 14 L 112 10 L 102 70 L 14 74 Z" fill="#facc15" stroke="#0a0a0a" stroke-width="5" stroke-linejoin="round"/>
+            <!-- Right Badge (Purple) -->
+            <path d="M 112 10 L 268 14 L 258 74 L 102 70 Z" fill="#8b5cf6" stroke="#0a0a0a" stroke-width="5" stroke-linejoin="round"/>
+            <!-- Center Text RiVALS -->
+            <text x="136" y="53" font-family="'Orbitron', 'Arial Black', sans-serif" font-weight="900" font-size="39" font-style="italic" fill="#ffffff" stroke="#0a0a0a" stroke-width="5" text-anchor="middle" paint-order="stroke fill" letter-spacing="-1">RiVALS</text>
+          </svg>
+          <span class="text-xs font-bold tracking-widest uppercase px-2 py-0.5 rounded bg-slate-200 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 hidden sm:inline-block">
+            輪盤工具
+          </span>
+        </div>
+
+        <!-- HEADER ACTIONS: Theme Toggle, Sound Toggle, Settings -->
+        <div class="flex items-center gap-2">
+          
+          <!-- Theme Switcher Button (Black/White Toggle) -->
+          <button id="btn-theme-toggle" onclick="toggleTheme()" title="切換黑白模式" class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-700 dark:text-neutral-200 hover:bg-slate-200 dark:hover:bg-neutral-700 transition flex items-center justify-center">
+            <i id="icon-theme" class="fa-solid fa-sun text-amber-500 text-lg"></i>
+          </button>
+
+          <!-- Audio Toggle Button -->
+          <button id="btn-sound-toggle" onclick="toggleAudio()" title="音效設定" class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-700 dark:text-neutral-200 hover:bg-slate-200 dark:hover:bg-neutral-700 transition flex items-center justify-center">
+            <i id="icon-sound" class="fa-solid fa-volume-high text-lg"></i>
+          </button>
+
+          <!-- Settings Button -->
+          <button onclick="openSettings()" class="h-10 px-3.5 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold text-xs tracking-wider transition hover:opacity-90 flex items-center gap-2">
+            <i class="fa-solid fa-sliders text-sm"></i>
+            <span class="hidden sm:inline">設定</span>
+          </button>
+
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- LEFT SECTION: WHEEL & MAIN SPIN TRIGGER -->
+      <section class="lg:col-span-7 flex flex-col items-center justify-center space-y-6">
+        
+        <!-- Header Text -->
+        <div class="text-center space-y-1">
+          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            每局挑戰輪盤
+          </h2>
+          <p class="text-xs sm:text-sm font-medium text-slate-500 dark:text-neutral-400">
+            開始遊戲前旋轉一次，抽中項目本局必須全程執行
+          </p>
+        </div>
+
+        <!-- WHEEL CANVAS DISPLAY -->
+        <div class="relative w-full max-w-[400px] sm:max-w-[460px] aspect-square flex items-center justify-center my-2">
+          
+          <!-- Sleek Top Pointer -->
+          <div class="absolute -top-3 z-30 flex flex-col items-center pointer-events-none">
+            <div class="w-6 h-8 bg-slate-900 dark:bg-white clip-pointer drop-shadow-md border-t-2 border-slate-400"></div>
+            <div class="w-2.5 h-2.5 rounded-full bg-slate-900 dark:bg-white -mt-1 shadow"></div>
+          </div>
+
+          <!-- Canvas Element -->
+          <canvas id="wheel-canvas" width="600" height="600" class="w-full h-full rounded-full transition-transform duration-75 drop-shadow-md"></canvas>
+
+          <!-- Minimal Center Hub / Spin Trigger -->
+          <div onclick="triggerSpin()" class="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-slate-900 dark:bg-neutral-900 border-4 border-slate-100 dark:border-neutral-800 text-white flex flex-col items-center justify-center z-20 cursor-pointer hover:scale-105 active:scale-95 transition shadow-lg">
+            <span class="font-rivals font-black text-xs sm:text-sm italic tracking-wider text-yellow-400">RIVALS</span>
+            <span class="text-[10px] font-bold text-slate-300 dark:text-neutral-400 uppercase tracking-widest mt-0.5">SPIN</span>
+          </div>
+        </div>
+
+        <!-- MINIMALIST SPIN BUTTON -->
+        <div class="w-full max-w-sm pt-2">
+          <button id="btn-spin" onclick="triggerSpin()" class="w-full py-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-neutral-950 font-black text-lg sm:text-xl tracking-widest shadow-md transition-all active:scale-[0.99] flex items-center justify-center gap-3 border border-transparent">
+            <i class="fa-solid fa-play text-sm"></i>
+            <span>轉動輪盤</span>
+          </button>
+        </div>
+
+      </section>
+
+      <!-- RIGHT SECTION: MATCH PENALTIES & STATS -->
+      <section class="lg:col-span-5 flex flex-col h-full space-y-6">
+        
+        <div class="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col flex-1 min-h-[400px] transition-colors">
+          
+          <!-- Header -->
+          <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100 dark:border-neutral-800">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-list-check text-slate-700 dark:text-neutral-300"></i>
+              <h3 class="text-base font-bold tracking-wide">本局生效懲罰</h3>
+            </div>
+            <button onclick="clearCurrentRoundPenalties()" class="text-xs font-semibold text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition flex items-center gap-1 bg-slate-100 dark:bg-neutral-800 px-2.5 py-1.5 rounded-lg">
+              <i class="fa-solid fa-trash-can"></i> 清除
+            </button>
+          </div>
+
+          <!-- Penalty List Container -->
+          <div id="penalty-list" class="flex-1 space-y-2.5 overflow-y-auto pr-1 max-h-[300px] min-h-[160px]">
+            <!-- Dynamic items generated by JS -->
+          </div>
+
+          <!-- Empty State -->
+          <div id="empty-penalty-msg" class="hidden flex-1 flex-col items-center justify-center text-center p-6 text-slate-400 dark:text-neutral-500 border border-dashed border-slate-200 dark:border-neutral-800 rounded-xl my-2">
+            <i class="fa-solid fa-circle-notch text-3xl mb-2 opacity-30"></i>
+            <p class="font-semibold text-sm">尚無生效懲罰</p>
+            <p class="text-xs mt-1">點擊上方「轉動輪盤」來抽取本局挑戰！</p>
+          </div>
+
+          <!-- STATS & NEXT ROUND FOOTER -->
+          <div class="mt-6 pt-4 border-t border-slate-100 dark:border-neutral-800 space-y-3">
+            
+            <div class="grid grid-cols-2 gap-3">
+              <div class="bg-slate-50 dark:bg-neutral-950 border border-slate-200/60 dark:border-neutral-800/80 rounded-xl p-3 text-center">
+                <span class="text-[11px] font-semibold text-slate-400 dark:text-neutral-400 block mb-0.5">已完成局數</span>
+                <span id="stat-completed-rounds" class="text-2xl font-black font-rivals">0</span>
+                <span class="text-xs font-semibold text-slate-400 ml-0.5">局</span>
+              </div>
+              <div class="bg-slate-50 dark:bg-neutral-950 border border-slate-200/60 dark:border-neutral-800/80 rounded-xl p-3 text-center">
+                <span class="text-[11px] font-semibold text-slate-400 dark:text-neutral-400 block mb-0.5">影片結束機率</span>
+                <span id="stat-end-chance" class="text-2xl font-black font-rivals text-red-500">5%</span>
+              </div>
+            </div>
+
+            <button onclick="finishRound()" class="w-full py-3 px-4 rounded-xl border border-slate-300 dark:border-neutral-700 hover:bg-slate-100 dark:hover:bg-neutral-800 font-bold text-sm tracking-wider transition flex items-center justify-center gap-2 active:scale-[0.98]">
+              <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
+              <span>結算本局 / 開始下一局</span>
+            </button>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL: RESULT POPUP -->
+  <div id="modal-result" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-200">
+    <div class="relative w-full max-w-md bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-6 sm:p-7 shadow-2xl text-center transform scale-95 transition-all duration-200" id="modal-result-card">
+      
+      <div id="result-category" class="inline-block px-3 py-1 text-xs font-bold rounded-md bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 mb-3 border border-slate-200 dark:border-neutral-700">
+        懲罰項目
+      </div>
+
+      <!-- Result Title -->
+      <h2 id="result-title" class="text-2xl sm:text-3xl font-black tracking-wide mb-3">
+        地獄輪盤
+      </h2>
+
+      <!-- Result Description -->
+      <div class="bg-slate-50 dark:bg-neutral-950 border border-slate-200/80 dark:border-neutral-800 rounded-xl p-4 mb-5">
+        <p id="result-description" class="text-slate-700 dark:text-neutral-300 text-sm sm:text-base font-medium leading-relaxed">
+          再抽三次，三個懲罰全部生效。
+        </p>
+      </div>
+
+      <!-- Multi Spin Status Info -->
+      <div id="result-multi-info" class="hidden mb-4 p-2 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-lg text-purple-700 dark:text-purple-300 text-xs font-bold">
+        <i class="fa-solid fa-layer-group"></i> 剩餘連抽次數：<span id="multi-spin-count">0</span> 次
+      </div>
+
+      <!-- Accept Button -->
+      <button id="btn-accept" onclick="acceptResult()" class="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-neutral-950 font-bold text-base tracking-wider transition active:scale-[0.98]">
+        接受挑戰
+      </button>
+
+    </div>
+  </div>
+
+  <!-- MODAL: SETTINGS -->
+  <div id="modal-settings" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-200">
+    <div class="relative w-full max-w-sm bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-6 shadow-2xl transform scale-95 transition-all duration-200 max-h-[90vh] overflow-y-auto">
+      
+      <!-- Modal Header -->
+      <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-100 dark:border-neutral-800">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-slate-700 dark:text-neutral-300"></i>
+          <h3 class="text-base font-bold">輪盤設定</h3>
+        </div>
+        <button onclick="closeSettings()" class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Settings Form -->
+      <div class="space-y-4 text-xs font-medium">
+        
+        <!-- Category Toggles -->
+        <div class="space-y-2">
+          <label class="block font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-wider text-[10px]">懲罰類型過濾</label>
+          
+          <label class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-950 border border-slate-200/60 dark:border-neutral-800 cursor-pointer">
+            <span class="font-bold text-slate-800 dark:text-neutral-200">普通懲罰</span>
+            <input type="checkbox" id="cfg-normal" checked onchange="updateSettings()" class="w-4 h-4 accent-slate-900 dark:accent-white rounded">
+          </label>
+
+          <label class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-950 border border-slate-200/60 dark:border-neutral-800 cursor-pointer">
+            <span class="font-bold text-slate-800 dark:text-neutral-200">困難懲罰</span>
+            <input type="checkbox" id="cfg-hard" checked onchange="updateSettings()" class="w-4 h-4 accent-slate-900 dark:accent-white rounded">
+          </label>
+
+          <label class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-950 border border-slate-200/60 dark:border-neutral-800 cursor-pointer">
+            <span class="font-bold text-slate-800 dark:text-neutral-200">地獄懲罰</span>
+            <input type="checkbox" id="cfg-hell" checked onchange="updateSettings()" class="w-4 h-4 accent-slate-900 dark:accent-white rounded">
+          </label>
+
+          <label class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-950 border border-slate-200/60 dark:border-neutral-800 cursor-pointer">
+            <span class="font-bold text-slate-800 dark:text-neutral-200">特殊事件</span>
+            <input type="checkbox" id="cfg-special" checked onchange="updateSettings()" class="w-4 h-4 accent-slate-900 dark:accent-white rounded">
+          </label>
+
+          <label class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-950 border border-slate-200/60 dark:border-neutral-800 cursor-pointer">
+            <span class="font-bold text-slate-800 dark:text-neutral-200">影片結束格</span>
+            <input type="checkbox" id="cfg-end" checked onchange="updateSettings()" class="w-4 h-4 accent-slate-900 dark:accent-white rounded">
+          </label>
+        </div>
+
+        <!-- Video End Chance Slider -->
+        <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-neutral-800">
+          <div class="flex justify-between items-center font-bold">
+            <span class="text-slate-700 dark:text-neutral-300">影片結束初始機率</span>
+            <span id="cfg-chance-val" class="font-rivals font-bold text-red-500 text-sm">5%</span>
+          </div>
+          <input type="range" id="cfg-chance-slider" min="1" max="30" value="5" oninput="onChanceSliderInput(this.value)" class="w-full accent-slate-900 dark:accent-white bg-slate-200 dark:bg-neutral-800 rounded-lg cursor-pointer">
+        </div>
+
+        <!-- Sound & Haptic Controls -->
+        <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-neutral-800">
+          <label class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-950 border border-slate-200/60 dark:border-neutral-800 cursor-pointer">
+            <span class="font-bold text-slate-800 dark:text-neutral-200">音效回饋</span>
+            <input type="checkbox" id="cfg-audio" checked onchange="updateSettings()" class="w-4 h-4 accent-slate-900 dark:accent-white rounded">
+          </label>
+
+          <label class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-950 border border-slate-200/60 dark:border-neutral-800 cursor-pointer">
+            <span class="font-bold text-slate-800 dark:text-neutral-200">觸覺震動</span>
+            <input type="checkbox" id="cfg-vibe" checked onchange="updateSettings()" class="w-4 h-4 accent-slate-900 dark:accent-white rounded">
+          </label>
+        </div>
+
+        <!-- Reset Button -->
+        <div class="pt-3 border-t border-slate-100 dark:border-neutral-800">
+          <button onclick="resetMatchData()" class="w-full py-2.5 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 font-bold transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-rotate-left"></i>
+            <span>重置統計與懲罰紀錄</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT APP LOGIC -->
+  <script>
+    /* ==========================================================================
+       1. DATA MODELS & SECTOR CONFIGURATION
+       ========================================================================== */
+    const ALL_ITEMS = [
+      { id: 1, name: '隨機武器', category: 'normal', desc: '由地圖或系統隨機決定使用的武器。' },
+      { id: 2, name: '只能使用主武器', category: 'normal', desc: '全程僅能使用主要武器攻防。' },
+      { id: 3, name: '只能使用副武器', category: 'normal', desc: '全程僅能使用副武器（手槍等）進行攻擊。' },
+      { id: 4, name: '只能使用近戰武器', category: 'normal', desc: '禁止射擊！僅能使用小刀、小斧等近戰武器。' },
+      { id: 5, name: '只能使用投擲物', category: 'normal', desc: '僅能靠手榴彈、閃光彈、燒夷彈摧毀對手。' },
+      { id: 6, name: '只能使用拳頭', category: 'normal', desc: '真男人對決！丟掉所有裝備，全憑雙拳攻防。' },
+      { id: 7, name: '本局只能使用一把武器', category: 'hard', desc: '選定或拿到第一把武器後，整局不得切換。' },
+      { id: 8, name: '本局不能使用投擲物', category: 'hard', desc: '禁用所有投擲裝備，純靠槍法對決。' },
+      { id: 9, name: '隨機抽一把武器', category: 'hard', desc: '閉著眼睛或開盲盒抽出一把武器並強制使用。' },
+      { id: 10, name: '隨機抽兩把武器', category: 'hard', desc: '抽兩把武器作為本局唯一配置。' },
+      { id: 11, name: '最不熟悉的武器', category: 'normal', desc: '使用你平日最不擅長、手感最爛的武器。' },
+      { id: 12, name: '最少使用的武器', category: 'normal', desc: '使用玩家生涯數據中擊殺數最少的武器。' },
+      { id: 13, name: '隨機武器類型', category: 'normal', desc: '抽類別（如：衝鋒槍 / 散彈槍 / 狙擊槍）。' },
+      { id: 14, name: '不能使用近戰武器', category: 'hard', desc: '本局嚴禁使用近戰武器補刀或走位。' },
+      { id: 15, name: '不能使用副武器', category: 'hard', desc: '主要武器彈藥用盡時不可切換至副武器。' },
+      { id: 16, name: '不能使用主武器', category: 'hard', desc: '封印主武器，僅能依賴副武器或工具。' },
+      { id: 17, name: '雙重懲罰', category: 'special', desc: '運氣大考驗！立刻再抽 2 個懲罰並同時執行。', extraSpins: 2 },
+      { id: 18, name: '三重懲罰', category: 'special', desc: '難度暴升！立刻再抽 3 個懲罰全部生效。', extraSpins: 3 },
+      { id: 19, name: '隨機武器＋隨機懲罰', category: 'special', desc: '同時隨機限定一把武器，並加抽一個額外懲罰！', extraSpins: 1 },
+      { id: 20, name: '下一局也接受懲罰', category: 'hell', desc: '本局懲罰強度延續至下一局，連續挑戰！' },
+      { id: 21, name: '死亡一次再抽', category: 'hell', desc: '遊戲中只要每死亡一次，就必須重新轉輪盤追加懲罰！' },
+      { id: 22, name: '上一局武器', category: 'normal', desc: '強制延用上一局遊戲所使用的相同武器。' },
+      { id: 23, name: '反轉', category: 'special', desc: '滑鼠/手把視角操作反轉，或鍵盤前後左右反轉！' },
+      { id: 24, name: '命運二選一', category: 'special', desc: '由觀眾或隊友現場挑選兩個懲罰，你二選一。' },
+      { id: 25, name: '全部隨機', category: 'special', desc: '武器、配件、物品、策略全靠隨機骰子決定。' },
+      { id: 26, name: '地獄輪盤', category: 'hell', desc: '進入終極地獄！連續再抽三次，三個懲罰全數採納！', extraSpins: 3 },
+      { id: 27, name: '最後一局', category: 'special', desc: '終局決戰！不論勝負，此局結束後結束本次挑戰。' },
+      { id: 28, name: '重新開始', category: 'special', desc: '運氣大爆發！重置先前累積的所有懲罰，重新來過。', action: 'RESET_ALL' },
+      { id: 29, name: '救命格', category: 'special', desc: '免除懲罰！本局可以自由選擇最順手的神裝出擊！', action: 'SAFE' },
+      { id: 30, name: '影片結束', category: 'end', desc: '挑戰直接失敗或結束！感謝觀看，馬上停錄！', action: 'VIDEO_END' }
+    ];
+
+    /* Global State */
+    let activeWheelItems = [...ALL_ITEMS];
+    let currentRoundPenalties = [];
+    let completedRounds = 0;
+    let endChancePercent = 5;
+    let pendingExtraSpins = 0;
+    let isDarkMode = true;
+
+    // Settings
+    let settings = {
+      allowNormal: true,
+      allowHard: true,
+      allowHell: true,
+      allowSpecial: true,
+      allowEnd: true,
+      baseEndChance: 5,
+      soundEnabled: true,
+      vibrationEnabled: true
+    };
+
+    // Wheel Animation Variables
+    let canvas, ctx;
+    let currentAngle = 0;
+    let isSpinning = false;
+    let lastTickIndex = -1;
+
+    /* Web Audio API Synthesizer */
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioCtx = new AudioContext();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playTickSound() {
+      if (!settings.soundEnabled) return;
+      initAudio();
+      if (!audioCtx) return;
+
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(500 + Math.random() * 100, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.03);
+
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.03);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.03);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function playWinSound(isEnd = false) {
+      if (!settings.soundEnabled) return;
+      initAudio();
+      if (!audioCtx) return;
+
+      try {
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(350, now);
+        osc.frequency.exponentialRampToValueAtTime(700, now + 0.25);
+
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        osc.stop(now + 0.3);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    /* ==========================================================================
+       2. CANVAS WHEEL DRAWING (Minimalist Palette)
+       ========================================================================== */
+    window.onload = function () {
+      canvas = document.getElementById('wheel-canvas');
+      ctx = canvas.getContext('2d');
+      
+      filterActiveItems();
+      renderWheel();
+      updatePenaltyListUI();
+
+      window.addEventListener('resize', () => {
+        renderWheel();
+      });
+    };
+
+    function filterActiveItems() {
+      activeWheelItems = ALL_ITEMS.filter(item => {
+        if (item.category === 'normal' && !settings.allowNormal) return false;
+        if (item.category === 'hard' && !settings.allowHard) return false;
+        if (item.category === 'hell' && !settings.allowHell) return false;
+        if (item.category === 'special' && !settings.allowSpecial) return false;
+        if (item.category === 'end' && !settings.allowEnd) return false;
+        return true;
+      });
+
+      if (activeWheelItems.length === 0) {
+        activeWheelItems = [...ALL_ITEMS];
+      }
+    }
+
+    function renderWheel() {
+      if (!ctx) return;
+      const width = canvas.width;
+      const height = canvas.height;
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const radius = width / 2 - 16;
+
+      ctx.clearRect(0, 0, width, height);
+
+      const numSlices = activeWheelItems.length;
+      const sliceAngle = (2 * Math.PI) / numSlices;
+
+      // Outer Minimalist Ring
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius + 8, 0, 2 * Math.PI);
+      ctx.fillStyle = isDarkMode ? '#18181b' : '#e2e8f0';
+      ctx.fill();
+      ctx.restore();
+
+      // Minimalist Palette per Slice
+      const darkPalette = ['#18181b', '#27272a', '#09090b', '#3f3f46'];
+      const lightPalette = ['#ffffff', '#f1f5f9', '#e2e8f0', '#f8fafc'];
+
+      for (let i = 0; i < numSlices; i++) {
+        const item = activeWheelItems[i];
+        const angleStart = currentAngle + i * sliceAngle;
+        const angleEnd = angleStart + sliceAngle;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, angleStart, angleEnd);
+        ctx.closePath();
+
+        // Background color
+        if (item.category === 'end') {
+          ctx.fillStyle = '#ef4444'; // Crisp red for Video End
+        } else if (item.category === 'hell') {
+          ctx.fillStyle = isDarkMode ? '#881337' : '#fecdd3'; // Hell category
+        } else {
+          const pal = isDarkMode ? darkPalette : lightPalette;
+          ctx.fillStyle = pal[i % pal.length];
+        }
+        ctx.fill();
+
+        // Wedge Divider Border
+        ctx.strokeStyle = isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Wedge Text
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angleStart + sliceAngle / 2);
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        
+        const fontSize = numSlices > 25 ? 12 : numSlices > 18 ? 13 : 15;
+        ctx.font = `600 ${fontSize}px "Noto Sans TC", sans-serif`;
+
+        // Text Colors
+        if (item.category === 'end') {
+          ctx.fillStyle = '#ffffff';
+        } else if (item.category === 'hell') {
+          ctx.fillStyle = isDarkMode ? '#fecdd3' : '#9f1239';
+        } else {
+          ctx.fillStyle = isDarkMode ? '#f4f4f5' : '#18181b';
+        }
+
+        let text = item.name;
+        if (text.length > 9) {
+          text = text.substring(0, 8) + '…';
+        }
+
+        ctx.fillText(text, radius - 30, 0);
+
+        // Dot Marker
+        ctx.beginPath();
+        ctx.arc(radius - 14, 0, 3, 0, 2 * Math.PI);
+        if (item.category === 'end') ctx.fillStyle = '#ffffff';
+        else if (item.category === 'hell') ctx.fillStyle = '#f43f5e';
+        else if (item.category === 'special') ctx.fillStyle = '#a855f7';
+        else if (item.category === 'hard') ctx.fillStyle = '#f59e0b';
+        else ctx.fillStyle = '#10b981';
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    /* ==========================================================================
+       3. WHEEL SPIN LOGIC & PHYSICS ANIMATION
+       ========================================================================== */
+    function triggerSpin() {
+      if (isSpinning) return;
+      initAudio();
+
+      isSpinning = true;
+      document.getElementById('btn-spin').classList.add('opacity-60', 'cursor-not-allowed');
+
+      const numSlices = activeWheelItems.length;
+      const sliceAngle = (2 * Math.PI) / numSlices;
+      
+      const fullSpins = 5 + Math.floor(Math.random() * 4);
+      const targetSliceIndex = Math.floor(Math.random() * numSlices);
+      
+      const targetAngleOffset = (1.5 * Math.PI) - (targetSliceIndex + 0.5) * sliceAngle;
+      const totalRotation = fullSpins * 2 * Math.PI + (targetAngleOffset - (currentAngle % (2 * Math.PI)));
+
+      const duration = 4000 + Math.random() * 800;
+      const startTime = performance.now();
+      const initialAngle = currentAngle;
+
+      function animateSpin(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Minimal Deceleration Ease
+        const easeOut = 1 - Math.pow(1 - progress, 4);
+        currentAngle = initialAngle + totalRotation * easeOut;
+
+        renderWheel();
+
+        const currentSliceUnderPointer = Math.floor(
+          (((1.5 * Math.PI - currentAngle) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI)) / sliceAngle
+        );
+
+        if (currentSliceUnderPointer !== lastTickIndex) {
+          playTickSound();
+          lastTickIndex = currentSliceUnderPointer;
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(animateSpin);
+        } else {
+          isSpinning = false;
+          document.getElementById('btn-spin').classList.remove('opacity-60', 'cursor-not-allowed');
+          onSpinFinished(targetSliceIndex);
+        }
+      }
+
+      requestAnimationFrame(animateSpin);
+    }
+
+    function onSpinFinished(winningIndex) {
+      const selectedItem = activeWheelItems[winningIndex];
+
+      if (settings.vibrationEnabled && navigator.vibrate) {
+        navigator.vibrate([80, 40, 80]);
+      }
+
+      const appWrapper = document.getElementById('app-wrapper');
+      appWrapper.classList.add('shake-impact');
+      setTimeout(() => {
+        appWrapper.classList.remove('shake-impact');
+      }, 400);
+
+      playWinSound(selectedItem.category === 'end');
+      displayResultModal(selectedItem);
+    }
+
+    /* ==========================================================================
+       4. THEME SWITCHER (Light / Dark Minimalist Mode)
+       ========================================================================== */
+    function toggleTheme() {
+      const htmlEl = document.documentElement;
+      const iconTheme = document.getElementById('icon-theme');
+
+      if (htmlEl.classList.contains('dark')) {
+        htmlEl.classList.remove('dark');
+        isDarkMode = false;
+        iconTheme.className = 'fa-solid fa-moon text-slate-700 text-lg';
+      } else {
+        htmlEl.classList.add('dark');
+        isDarkMode = true;
+        iconTheme.className = 'fa-solid fa-sun text-amber-500 text-lg';
+      }
+
+      renderWheel();
+    }
+
+    /* Modal Results Handler */
+    let lastResultItem = null;
+
+    function displayResultModal(item) {
+      lastResultItem = item;
+
+      const titleEl = document.getElementById('result-title');
+      const catEl = document.getElementById('result-category');
+      const descEl = document.getElementById('result-description');
+      const multiInfoEl = document.getElementById('result-multi-info');
+
+      titleEl.innerText = item.name;
+      descEl.innerText = item.desc;
+
+      const catNames = {
+        normal: '普通懲罰',
+        hard: '困難懲罰',
+        hell: '地獄懲罰 💀',
+        special: '特殊事件 ✨',
+        end: '影片結束 🎬'
+      };
+      catEl.innerText = catNames[item.category] || '懲罰項目';
+
+      if (item.extraSpins && pendingExtraSpins === 0) {
+        pendingExtraSpins = item.extraSpins;
+      }
+
+      if (pendingExtraSpins > 0) {
+        multiInfoEl.classList.remove('hidden');
+        document.getElementById('multi-spin-count').innerText = pendingExtraSpins;
+      } else {
+        multiInfoEl.classList.add('hidden');
+      }
+
+      const modal = document.getElementById('modal-result');
+      const card = document.getElementById('modal-result-card');
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      card.classList.remove('scale-95');
+      card.classList.add('scale-100');
+    }
+
+    function acceptResult() {
+      if (!lastResultItem) return;
+
+      const item = lastResultItem;
+
+      if (item.action === 'RESET_ALL') {
+        currentRoundPenalties = [];
+      } else if (item.action !== 'SAFE') {
+        currentRoundPenalties.push({
+          id: Date.now() + Math.random(),
+          name: item.name,
+          category: item.category,
+          desc: item.desc
+        });
+      }
+
+      updatePenaltyListUI();
+
+      const modal = document.getElementById('modal-result');
+      const card = document.getElementById('modal-result-card');
+      card.classList.remove('scale-100');
+      card.classList.add('scale-95');
+      modal.classList.add('opacity-0', 'pointer-events-none');
+
+      if (pendingExtraSpins > 0) {
+        pendingExtraSpins--;
+        if (pendingExtraSpins > 0) {
+          setTimeout(() => {
+            triggerSpin();
+          }, 500);
+        }
+      }
+    }
+
+    /* ==========================================================================
+       5. UI LIST RENDERERS & ROUND CONTROL
+       ========================================================================== */
+    function updatePenaltyListUI() {
+      const listContainer = document.getElementById('penalty-list');
+      const emptyMsg = document.getElementById('empty-penalty-msg');
+
+      listContainer.innerHTML = '';
+
+      if (currentRoundPenalties.length === 0) {
+        emptyMsg.classList.remove('hidden');
+        emptyMsg.classList.add('flex');
+        return;
+      } else {
+        emptyMsg.classList.add('hidden');
+        emptyMsg.classList.remove('flex');
+      }
+
+      currentRoundPenalties.forEach((p, index) => {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'flex items-start justify-between p-3 rounded-xl bg-slate-50 dark:bg-neutral-950 border border-slate-200/70 dark:border-neutral-800 transition group';
+        
+        itemEl.innerHTML = `
+          <div class="flex items-start gap-2.5 flex-1 pr-2">
+            <span class="text-xs font-bold text-slate-400 dark:text-neutral-500 font-rivals mt-0.5">${index + 1}.</span>
+            <div>
+              <div class="font-bold text-xs sm:text-sm leading-snug">${escapeHtml(p.name)}</div>
+              <div class="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5 leading-normal line-clamp-2">${escapeHtml(p.desc)}</div>
+            </div>
+          </div>
+          <button onclick="removePenalty('${p.id}')" class="text-slate-400 hover:text-red-500 p-1 transition opacity-70 group-hover:opacity-100">
+            <i class="fa-solid fa-xmark text-xs"></i>
+          </button>
+        `;
+
+        listContainer.appendChild(itemEl);
+      });
+    }
+
+    function removePenalty(id) {
+      currentRoundPenalties = currentRoundPenalties.filter(p => String(p.id) !== String(id));
+      updatePenaltyListUI();
+    }
+
+    function clearCurrentRoundPenalties() {
+      currentRoundPenalties = [];
+      updatePenaltyListUI();
+    }
+
+    function finishRound() {
+      completedRounds++;
+      document.getElementById('stat-completed-rounds').innerText = completedRounds;
+
+      endChancePercent = settings.baseEndChance + (completedRounds * 2);
+      document.getElementById('stat-end-chance').innerText = `${endChancePercent}%`;
+
+      currentRoundPenalties = [];
+      updatePenaltyListUI();
+    }
+
+    function resetMatchData() {
+      completedRounds = 0;
+      endChancePercent = settings.baseEndChance;
+      currentRoundPenalties = [];
+      pendingExtraSpins = 0;
+
+      document.getElementById('stat-completed-rounds').innerText = '0';
+      document.getElementById('stat-end-chance').innerText = `${endChancePercent}%`;
+
+      updatePenaltyListUI();
+      closeSettings();
+    }
+
+    /* Settings Controls */
+    function openSettings() {
+      document.getElementById('modal-settings').classList.remove('opacity-0', 'pointer-events-none');
+    }
+
+    function closeSettings() {
+      document.getElementById('modal-settings').classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    function updateSettings() {
+      settings.allowNormal = document.getElementById('cfg-normal').checked;
+      settings.allowHard = document.getElementById('cfg-hard').checked;
+      settings.allowHell = document.getElementById('cfg-hell').checked;
+      settings.allowSpecial = document.getElementById('cfg-special').checked;
+      settings.allowEnd = document.getElementById('cfg-end').checked;
+      settings.soundEnabled = document.getElementById('cfg-audio').checked;
+      settings.vibrationEnabled = document.getElementById('cfg-vibe').checked;
+
+      const soundIcon = document.getElementById('icon-sound');
+      if (settings.soundEnabled) {
+        soundIcon.className = 'fa-solid fa-volume-high text-lg';
+      } else {
+        soundIcon.className = 'fa-solid fa-volume-xmark text-lg text-slate-400';
+      }
+
+      filterActiveItems();
+      renderWheel();
+    }
+
+    function onChanceSliderInput(val) {
+      settings.baseEndChance = parseInt(val, 10);
+      document.getElementById('cfg-chance-val').innerText = `${val}%`;
+      endChancePercent = settings.baseEndChance + (completedRounds * 2);
+      document.getElementById('stat-end-chance').innerText = `${endChancePercent}%`;
+    }
+
+    function toggleAudio() {
+      settings.soundEnabled = !settings.soundEnabled;
+      document.getElementById('cfg-audio').checked = settings.soundEnabled;
+      updateSettings();
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, function(m) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        }[m];
+      });
+    }
+  </script>
+</body>
+</html>
